@@ -88,13 +88,47 @@ def backtest(df, entry_z: float = 2.0, exit_z: float = 0.5, stop_z: float = 3.5)
 
     return trades
 
+def summarize(trades: list):
+    results = pd.DataFrame(trades)
+    #1. Total Pnl across all trades
+    total_pnl = results["pnl"].sum()
+    win_rate = (results["pnl"] > 0).mean()
+    avg_win =results[results["pnl"]>0]["pnl"].mean()
+    avg_loss = results[results["pnl"]<0]["pnl"].mean()
+    cumulative = results["pnl"].cumsum()
+    running_max = cumulative.cummax()
+    drawdown = cumulative - running_max
+    max_drawdown = drawdown.min()
+
+
+    return {
+        "total_pnl": total_pnl,
+        "win_rate": win_rate,
+        "avg_win": avg_win,
+        "avg_loss": avg_loss,
+        "cumulative": cumulative,
+        "running max": running_max,
+        "drawdown": drawdown,
+        "max_drawdown": max_drawdown
+    }
+
+def print_summary(summary):
+    print(f"Total PnL:     {summary['total_pnl']:.5f}")
+    print(f"Win Rate:      {summary['win_rate']:.2%}")
+    print(f"Avg Win:       {summary['avg_win']:.5f}")
+    print(f"Avg Loss:      {summary['avg_loss']:.5f}")
+    print(f"Max Drawdown:  {summary['max_drawdown']:.5f}")
+
+    
 if __name__ == "__main__":
     #print(zscore("GBPJPY", mt5.TIMEFRAME_H1, window=20))
-    data = zscore("EURUSD", mt5.TIMEFRAME_H1, window=20)
+    data = zscore("GBPJPY", mt5.TIMEFRAME_H1, window=20)
     trades = backtest(data)
-    reasons = [t["reason"] for t in trades]
-    print(f"stop out = {reasons.count("stop out")}, exits = {reasons.count("exit trade")}")
-    print(len(trades))
-    print(trades[:5])
-
+    summary = summarize(trades)
+    print(summary["total_pnl"], summary["win_rate"], summary["avg_win"], summary["avg_loss"], summary["max_drawdown"])
+    print(f"Total PnL:     {summary['total_pnl']:.5f}")
+    print(f"Win Rate:      {summary['win_rate']:.2%}")
+    print(f"Avg Win:       {summary['avg_win']:.5f}")
+    print(f"Avg Loss:      {summary['avg_loss']:.5f}")
+    print(f"Max Drawdown:  {summary['max_drawdown']:.5f}")
     mt5.shutdown()
